@@ -1,2 +1,4 @@
 click>=6.6
 gspread>=0.3.0
+oauth2client>=2.0.2
+pandas>=0.18.0
