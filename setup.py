@@ -1,10 +1,9 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
-    name='egdatapacker',
+    name='egpackager',
     version='0.0.1',
-    packages=['egdatapacker'],
-    url='https://github.com/VUEG/egdatapacker',
+    url='https://github.com/VUEG/egpackager',
     license='MIT',
     author='Joona Lehtomäki',
     author_email='joona.lehtomaki@gmail.com',
@@ -29,6 +28,16 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
 
+    packages=find_packages(exclude=[]),
+    include_package_data=True,
+    zip_safe=False,
+    install_requires=[
+        "gspread>=0.3.0",
+        "click>=6.6"
+    ],
 
-
+    entry_points={'console_scripts': [
+        'egpackager = egpackager.cli:cli'
+        ]
+    }
 )
