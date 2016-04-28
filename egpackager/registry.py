@@ -3,6 +3,7 @@ import logging
 from collections import OrderedDict
 from egpackager.datasources import GspreadDataSource
 
+
 class RegistryManager(object):
 
     def __init__(self, debug=False):
@@ -16,9 +17,9 @@ class RegistryManager(object):
         self.logger.debug("Initializing new registry manager")
         self.registry = OrderedDict()
 
-    def add_gpsread_datasource(self, uri, credentials_file):
+    def add_gpsread_datasource(self, *args, **kwargs):
         self.logger.debug('Adding Google Sheets data source')
-        self.registry[uri] = GspreadDataSource(uri, credentials_file)
+        self.registry[kwargs['uri']] = GspreadDataSource(*args, **kwargs)
 
     def registry(self):
         return self.registry

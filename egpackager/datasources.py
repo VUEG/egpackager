@@ -41,9 +41,10 @@ class DataSource(object):
         else:
             return self.data.loc[self.data.name == key, value].values[0]
 
+
 class GspreadDataSource(DataSource):
 
-    def __init__(self, uri, credentials_file):
+    def __init__(self, uri, credentials_file, spreadsheet_name=None, sheet_no=None):
         DataSource.__init__(self, source_type="Google Spreadsheet", uri=uri)
         self.logger = logging.getLogger(__name__)
         try:
@@ -54,6 +55,8 @@ class GspreadDataSource(DataSource):
             credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_file, scope)
             self.gc = gspread.authorize(credentials)
             self.logger.debug('Set up credentials for Google Sheets API')
+            # Load the data straight away if enough information is provided
+            self.load_data(spreadsheet_name, sheet_no)
         except gspread.exceptions.SpreadsheetNotFound as e:
             raise
 
