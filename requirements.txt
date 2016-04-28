@@ -1,1 +1,2 @@
+click>=6.6
 gspread>=0.3.0
