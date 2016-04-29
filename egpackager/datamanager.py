@@ -1,7 +1,7 @@
 import logging
 
 from collections import OrderedDict
-from egpackager.datasources import GspreadDataSource
+from egpackager.datasources import GspreadDataSource, RasterDataSource
 
 
 class DataManager(object):
@@ -20,13 +20,18 @@ class DataManager(object):
     def add_datasource(self, *args, **kwargs):
         if 'type' not in kwargs:
             raise TypeError("Missing require keyword argument: 'type")
+
         if kwargs['type'] == 'gspread':
             # Remove keyword argument 'type' as it us not needed anymore
             del kwargs['type']
             self.logger.debug('Adding Google Sheets data source')
             self._data[kwargs['uri']] = GspreadDataSource(*args, **kwargs)
         elif kwargs['type'] == 'raster':
-            pass
+            del kwargs['type']
+            self.logger.debug('Adding raster data source')
+            self._data[kwargs['uri']] = RasterDataSource(*args, **kwargs)
+        else:
+            raise TypeError("Unknown data source type: {0}".format(kwargs['type']))
 
     @property
     def data(self):

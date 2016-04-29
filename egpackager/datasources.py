@@ -10,7 +10,7 @@ class DataSource(object):
 
     def __init__(self, source_type, uri):
         self.source_type = source_type
-        self.URI = uri
+        self.uri = uri
         self._data = None
         self.logger = logging.getLogger(__name__)
 
@@ -43,13 +43,44 @@ class DataSource(object):
             return self.data[key][value]
 
 
+class RasterDataSource(DataSource):
+
+    def __init__(self, uri):
+        DataSource.__init__(self, source_type="raster", uri=os.path.abspath(uri))
+        self.logger = logging.getLogger(__name__)
+        # Load the data straight away
+        self.load_data()
+
+
+    def load_data(self):
+        ''' Load basic metadata from a geospatial raster file.
+
+        The data is converted into a nested dictionary, where the name of the dataset is used as a top-level key.
+
+        :param raster_file: String name of the raster file.
+        :return: Methods is used for it's side effects only, no value is returned.
+        '''
+        try:
+            # Register GDAL format drivers and configuration options with a
+            # context manager.
+            self.logger.debug('Registering GDAL drivers')
+            with rasterio.drivers():
+                with rasterio.open(self.uri) as src:
+                    self._data = src.profile
+
+            self.logger.info('Loaded metadata from {0}'.format(self.uri))
+
+        except:
+            raise
+
+
 class GspreadDataSource(DataSource):
 
     def __init__(self, uri, credentials_file, spreadsheet_name=None, sheet_no=None):
         DataSource.__init__(self, source_type="Google Spreadsheet", uri=uri)
         self.logger = logging.getLogger(__name__)
         try:
-            # Set up the Google Drive API credeantials but don't get the data yet
+            # Set up the Google Drive API credentials but don't get the data yet
             scope = ['https://spreadsheets.google.com/feeds']
             self.credentials_file = credentials_file
             credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_file, scope)
@@ -88,7 +119,7 @@ class GspreadDataSource(DataSource):
                 dat_dict[dataset_name] = row_dict
 
             self._data = dat_dict
-            self.logger.info('Loaded data from {0}'.format(self.URI))
+            self.logger.info('Loaded data from {0}'.format(self.uri))
 
         except:
             raise
