@@ -1,7 +1,9 @@
 import gspread
 import logging
-import oauth2client
+import os
+import rasterio
 
+from oauth2client.service_account import ServiceAccountCredentials
 from pandas import DataFrame
 
 class DataSource(object):
@@ -18,28 +20,27 @@ class DataSource(object):
 
     @data.setter
     def data(self, value):
-        assert isinstance(value, DataFrame), "value is not a DataFrame: %r" % value
+        assert isinstance(value, dict), "value is not a dict: %r" % value
         self._data = value
 
     def get_value(self, key, value):
         ''' Simple wrapper to fetch a column value based on a key (dataset name).
 
-        The key is hardcoded to "name", so whatever data source is needed it needs to have a column called "name" that
-        uniquely identifies the dataset. If several matches are found, only the first is used.
+        Look for a (data row) value with a specified key.
 
         :param key: String dataset name.
         :param value: String column name of which value is returned.
         :return: String value
         '''
         # Check that the key and value are actually found
-        if key not in list(self.data["name"]):
-            self.logger.error("Key '{0}' not found in column 'name'".format(key))
+        if key not in self.data.keys():
+            self.logger.error("Key '{0}' not found in data keys".format(key))
             return None
-        elif value not in list(self.data.columns):
-            self.logger.error("Value '{0}' not found in column names".format(value))
+        elif value not in self.data[key].keys():
+            self.logger.error("Value '{0}' not found in data with key {1}".format(value, key))
             return None
         else:
-            return self.data.loc[self.data.name == key, value].values[0]
+            return self.data[key][value]
 
 
 class GspreadDataSource(DataSource):
@@ -49,7 +50,6 @@ class GspreadDataSource(DataSource):
         self.logger = logging.getLogger(__name__)
         try:
             # Set up the Google Drive API credeantials but don't get the data yet
-            from oauth2client.service_account import ServiceAccountCredentials
             scope = ['https://spreadsheets.google.com/feeds']
             self.credentials_file = credentials_file
             credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_file, scope)
@@ -62,6 +62,9 @@ class GspreadDataSource(DataSource):
 
     def load_data(self, spreadsheet_name, sheet_no):
         ''' Load data from a Google Spreadsheet once it has been set up.
+
+        The data is converted into a nested dictionary, where the name of the dataset is used as a top-level key.
+
         :param spreadsheet_name: String name of the spreadsheet.
         :param sheet_no: Index number of the worksheet to be loaded. Named loading not supported yet.
         :return: Methods is used for it's side effects only, no value is returned.
@@ -69,8 +72,22 @@ class GspreadDataSource(DataSource):
         try:
             # Get the actual data from the worksheet
             dat = self.gc.open(spreadsheet_name).get_worksheet(sheet_no).get_all_values()
-            # Convert to DataFrame for easier access. dat[0] is the header row
-            self._data = DataFrame(data=dat[1:len(dat)], columns=dat[0])
+            # Convert to dict, use dat[0] as the header row
+            header = dat[0]
+            # Remove item 'name'. We will be popping this out of each row and it is used as a key, not column.
+            header.remove('name')
+            dat_dict = {}
+            for row in dat[1:len(dat)]:
+                # Dataset name is the 4th column
+                dataset_name = row.pop(3)
+                # Create an empty dict for the row items
+                row_dict = {}
+                # Loop over the columns
+                for col_name in header:
+                    row_dict[col_name] = row[header.index(col_name)]
+                dat_dict[dataset_name] = row_dict
+
+            self._data = dat_dict
             self.logger.info('Loaded data from {0}'.format(self.URI))
 
         except:
