@@ -28,7 +28,7 @@ setup(
         'Programming Language :: Python :: 3.5',
     ],
 
-    packages=find_packages(exclude=[]),
+    packages=find_packages(exclude=['data']),
     include_package_data=True,
     zip_safe=False,
     install_requires=[
