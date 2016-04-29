@@ -38,6 +38,22 @@ class DataManager(object):
     def data(self):
         return self._data
 
+    def find_name(self, resource_name):
+        """
+        Simple method to find out the name of the dataset based on a resource name (essentially raster file name).
+
+        If no match is found, return a None.
+
+        :param resource_name: String raster file name as stated in the data source.
+        :return: String name of the dataset.
+        """
+        name = None
+        for item in self.data['metadata'].data.items():
+            if item[1]['resource_name'] == resource_name:
+                name = item[1]['name']
+        return name
+
+
     def get_metadata_value(self, key, value):
         return self.data['metadata'].get_value(key, value)
 
