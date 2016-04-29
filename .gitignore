@@ -67,3 +67,5 @@ target/
 #Generic
 .directory
 secret*.json
+data/
+
