@@ -76,7 +76,7 @@ class RasterDataSource(DataSource):
 
 class GspreadDataSource(DataSource):
 
-    def __init__(self, uri, credentials_file, spreadsheet_name=None, sheet_no=None):
+    def __init__(self, uri, credentials_file, spreadsheet_name=None, sheet=None):
         DataSource.__init__(self, source_type="Google Spreadsheet", uri=uri)
         self.logger = logging.getLogger(__name__)
         try:
@@ -87,30 +87,33 @@ class GspreadDataSource(DataSource):
             self.gc = gspread.authorize(credentials)
             self.logger.debug('Set up credentials for Google Sheets API')
             # Load the data straight away if enough information is provided
-            self.load_data(spreadsheet_name, sheet_no)
+            self.load_data(spreadsheet_name, sheet)
         except gspread.exceptions.SpreadsheetNotFound as e:
             raise
 
-    def load_data(self, spreadsheet_name, sheet_no):
+    def load_data(self, spreadsheet_name, sheet):
         ''' Load data from a Google Spreadsheet once it has been set up.
 
         The data is converted into a nested dictionary, where the name of the dataset is used as a top-level key.
 
         :param spreadsheet_name: String name of the spreadsheet.
-        :param sheet_no: Index number of the worksheet to be loaded. Named loading not supported yet.
+        :param sheet: Index number or name of the worksheet to be loaded. Named loading not supported yet.
         :return: Methods is used for it's side effects only, no value is returned.
         '''
         try:
             # Get the actual data from the worksheet
-            dat = self.gc.open(spreadsheet_name).get_worksheet(sheet_no).get_all_values()
+            if isinstance(sheet, int):
+                dat = self.gc.open(spreadsheet_name).get_worksheet(sheet).get_all_values()
+            elif isinstance(sheet, str):
+                dat = self.gc.open(spreadsheet_name).worksheet(sheet).get_all_values()
+            else:
+                raise TypeError("'sheet' must be a valid int index or str sheet name")
             # Convert to dict, use dat[0] as the header row
             header = dat[0]
-            # Remove item 'name'. We will be popping this out of each row and it is used as a key, not column.
-            header.remove('name')
             dat_dict = {}
             for row in dat[1:len(dat)]:
-                # Dataset name is the 4th column
-                dataset_name = row.pop(3)
+                # Dataset name is the 5th column
+                dataset_name = row[4]
                 # Create an empty dict for the row items
                 row_dict = {}
                 # Loop over the columns
