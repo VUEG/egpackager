@@ -17,9 +17,16 @@ class DataManager(object):
         self.logger.debug("Initializing new registry manager")
         self._data = OrderedDict()
 
-    def add_gpsread_datasource(self, *args, **kwargs):
-        self.logger.debug('Adding Google Sheets data source')
-        self._data[kwargs['uri']] = GspreadDataSource(*args, **kwargs)
+    def add_datasource(self, *args, **kwargs):
+        if 'type' not in kwargs:
+            raise TypeError("Missing require keyword argument: 'type")
+        if kwargs['type'] == 'gspread':
+            # Remove keyword argument 'type' as it us not needed anymore
+            del kwargs['type']
+            self.logger.debug('Adding Google Sheets data source')
+            self._data[kwargs['uri']] = GspreadDataSource(*args, **kwargs)
+        elif kwargs['type'] == 'raster':
+            pass
 
     @property
     def data(self):
